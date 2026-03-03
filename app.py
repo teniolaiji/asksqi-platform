@@ -25,7 +25,7 @@ answers_df = pd.read_csv(ANSWERS_FILE)
 
 # ---------------- HEADER ----------------
 st.title("💬 AskSQI")
-st.subheader("A safe, inclusive space for asking and answering data science and machine learning questions")
+st.subheader("A safe, inclusive space for asking and answering questions related to your course")
 
 st.markdown(
     """
