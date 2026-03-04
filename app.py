@@ -10,13 +10,13 @@ QUESTIONS_FILE = "questions.csv"
 ANSWERS_FILE = "answers.csv"
 
 COURSES = [
-    "Digital Workplace Proficiency",
     "Software Engineering",
     "Product Management",
     "Web Design",
     "Cyber Security",
     "Java Programming",
-    "Data Science & Analysis",
+    "Data Science",
+    "Data Analysis",
     "Robotics Engineering",
     "Artificial Intelligence (AI)",
     "Networking",
