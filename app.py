@@ -44,9 +44,7 @@ answers_df = pd.read_csv(ANSWERS_FILE)
 questions_df = pd.read_csv(QUESTIONS_FILE)
 answers_df = pd.read_csv(ANSWERS_FILE)
 
-# Reset questions (temporary cleanup)
-questions_df = questions_df.iloc[0:0]
-questions_df.to_csv(QUESTIONS_FILE, index=False)
+
 # ---------------- MIGRATION FOR OLD CSV ----------------
 # If you had old questions before adding course/level/error_message,
 # this makes sure the new columns exist so the app doesn't crash.
