@@ -41,6 +41,37 @@ if not os.path.exists(ANSWERS_FILE):
 questions_df = pd.read_csv(QUESTIONS_FILE)
 answers_df = pd.read_csv(ANSWERS_FILE)
 
+# ---------------- MIGRATION FOR OLD CSV ----------------
+# If you had old questions before adding course/level/error_message,
+# this makes sure the new columns exist so the app doesn't crash.
+
+required_cols = ["id", "title", "description", "course", "level", "code", "error_message", "timestamp"]
+
+# Add missing columns with safe defaults
+for col in required_cols:
+    if col not in questions_df.columns:
+        if col == "course":
+            questions_df[col] = "Software Engineering"  # default course
+        elif col == "level":
+            questions_df[col] = 1  # default level
+        else:
+            questions_df[col] = ""
+
+# If older data used "category", try to carry it over into "course"
+if "category" in questions_df.columns:
+    # Only fill course where it's blank
+    questions_df["course"] = questions_df["course"].replace("", pd.NA)
+    questions_df["course"] = questions_df["course"].fillna(questions_df["category"].astype(str))
+    # Optional: drop the old column to avoid confusion
+    questions_df = questions_df.drop(columns=["category"])
+
+# Ensure level is numeric and valid (1–6)
+questions_df["level"] = pd.to_numeric(questions_df["level"], errors="coerce").fillna(1).astype(int)
+questions_df["level"] = questions_df["level"].clip(1, 6)
+
+# Save the migrated data so next load is clean
+questions_df.to_csv(QUESTIONS_FILE, index=False)
+
 # ---------------- HEADER ----------------
 st.title("💬 AskSQI")
 st.subheader("A safe, inclusive space for asking and answering questions across all courses")
@@ -94,7 +125,7 @@ with st.form("ask_question_form"):
 st.markdown("## 📚 Questions & Answers")
 
 for _, q in questions_df.sort_values("id", ascending=False).iterrows():
-    header = f"{q['title']}  •  {q['course']}  •  Level {q['level']}"
+    header = f"{q.get('title','(No title)')}  •  {q.get('course','Unknown Course')}  •  Level {q.get('level',1)}"
     with st.expander(header):
         st.write(q["description"])
 
