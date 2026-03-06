@@ -10,7 +10,7 @@ from google.oauth2.service_account import Credentials
 # ================================================================
 st.set_page_config(page_title="AskSQI", layout="centered")
 
-for key, default in [("user", None), ("role", "student"), ("show_welcome", False)]:
+for key, default in [("user", None), ("role", "student"), ("show_welcome", False), ("auth_mode", "new")]:
     if key not in st.session_state:
         st.session_state[key] = default
 
@@ -178,7 +178,26 @@ def auth_sidebar(users_df):
     st.sidebar.title("Account")
 
     if not st.session_state["user"]:
-        mode = st.sidebar.radio("Select option", ["Login", "Register"], horizontal=True)
+
+        # First visit: ask if they're new before showing any form
+        if st.session_state["auth_mode"] == "new":
+            st.sidebar.markdown("### 👋 Welcome to AskSQI!")
+            st.sidebar.markdown("Are you a new or returning user?")
+            col1, col2 = st.sidebar.columns(2)
+            if col1.button("I'm new", use_container_width=True, key="btn_new"):
+                st.session_state["auth_mode"] = "register"
+                st.rerun()
+            if col2.button("Returning", use_container_width=True, key="btn_returning"):
+                st.session_state["auth_mode"] = "login"
+                st.rerun()
+            return
+
+        # Tabs for switching between Login / Register once the user has chosen
+        mode_index = 0 if st.session_state["auth_mode"] == "login" else 1
+        mode = st.sidebar.radio("Select option", ["Login", "Register"],
+                                index=mode_index, horizontal=True, key="auth_radio")
+        # Keep session state in sync if the user manually switches the radio
+        st.session_state["auth_mode"] = mode.lower()
 
         if mode == "Register":
             username = st.sidebar.text_input("Username", key="reg_username")
@@ -203,10 +222,16 @@ def auth_sidebar(users_df):
                     datetime.now().strftime("%Y-%m-%d %H:%M"),
                 ])
                 read_users_df.clear()
-                st.sidebar.success("Account created! Please log in.")
+                # Switch to Login automatically so the user can sign in immediately
+                st.session_state["auth_mode"] = "login"
+                st.session_state["just_registered"] = username
                 st.rerun()
 
-        else:
+        else:  # Login
+            # Pre-fill a friendly message if coming straight from registration
+            if st.session_state.pop("just_registered", None):
+                st.sidebar.success("✅ Account created! Please log in below.")
+
             username = st.sidebar.text_input("Username", key="login_username")
             password = st.sidebar.text_input("Password", type="password", key="login_password")
 
@@ -223,6 +248,7 @@ def auth_sidebar(users_df):
                     st.session_state["user"]         = username
                     st.session_state["role"]         = str(match.iloc[0].get("role", "student"))
                     st.session_state["show_welcome"] = True
+                    st.session_state["auth_mode"]    = "new"  # reset for next logout
                     st.rerun()
                 else:
                     st.sidebar.error("Incorrect password.")
@@ -230,7 +256,10 @@ def auth_sidebar(users_df):
         st.sidebar.write(f"Logged in as: **{st.session_state['user']}**")
         st.sidebar.write(f"Role: **{st.session_state['role']}**")
         if st.sidebar.button("Logout", key="logout_btn"):
-            st.session_state.update({"user": None, "role": "student", "show_welcome": False})
+            st.session_state.update({
+                "user": None, "role": "student",
+                "show_welcome": False, "auth_mode": "new",
+            })
             st.rerun()
 
 
@@ -242,7 +271,7 @@ auth_sidebar(users_df)
 
 if not st.session_state["user"]:
     st.title("💬 AskSQI")
-    st.info("Please login or register using the sidebar to ask or answer questions.")
+    st.info("👋 New here? Click **I'm new** in the sidebar to create an account. Already have one? Click **Returning** to log in.")
     st.stop()
 
 if st.session_state.pop("show_welcome", False):
